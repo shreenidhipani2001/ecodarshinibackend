@@ -1,10 +1,12 @@
 import { PrismaClient } from '@prisma/client';
+ 
 
 import { pool } from "../db/pgClient.js";
 
 import bcrypt from "bcrypt";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.js";
 const prisma = new PrismaClient();
+ 
  
 export default prisma;
 // CREATE / REGISTER USER
@@ -41,52 +43,21 @@ export const createUser = async (req, res) => {
   }
 };
 
-// LOGIN
-// export const loginUser = async (req, res) => {
-//     console.log("DB URL:", process.env.DATABASE_URL);
-//     console.log("Login request received");
-//   const { email, password } = req.body;
-//   console.log("Email:", email);
-//   console.log("Password:", password);
-//   try {
-//     const user = await prisma.user.findUnique({ where: { email } });
-//     console.log("User fetched:", user);
-//     if (!user) return res.status(404).json({ message: "User not found" });
-// console.log("User exists, verifying password");
-//     const valid = await bcrypt.compare(password, user.password_hash);
-//     console.log("Password valid:", valid);
-//     if (!valid) return res.status(401).json({ message: "Invalid password" });
-//     console.log("Password verified, generating tokens");
-
-//     const accessToken = generateAccessToken(user);
-//     console.log("Access Token generated:", accessToken);
-//     const refreshToken = generateRefreshToken(user);
-//     console.log("Refresh Token generated:", refreshToken);
-
-//     const response = res
-//       .cookie("accessToken", accessToken, {
-//         httpOnly: true,
-//         secure: process.env.NODE_ENV === "production",
-//       })
-//       .cookie("refreshToken", refreshToken, {
-//         httpOnly: true,
-//         secure: process.env.NODE_ENV === "production",
-//       })
-//       .json({ message: "Logged in", role: user.role, userId: user.id });
-//       console.log("Login response sent:", response);
-//   } catch (err) {
-//     console.log("Error during login:", err);
-//     res.status(500).json({ message: err.message });
-//   }
-// };
+    
 
 export const loginUser = async (req, res) => {
     console.log("DB URL:", process.env.DATABASE_URL);
     console.log("Login request received");
+     
+      if (!req.body.email || !req.body.password_hash) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
   const { email, password } = req.body;
+  
   const email1 = req.body.email;
   console.log("Email:", email);
   console.log("Password:", password);
+
  try {
   const result = await pool.query(
     'SELECT id, email, password_hash, role FROM users WHERE email = $1',
@@ -108,13 +79,7 @@ export const loginUser = async (req, res) => {
 
   const user = result.rows[0];
   console.log("User fetched from raw SQL:", user);
-
-//   const valid = await bcrypt.compare(password, user.password_hash);
-//   console.log("Password valid:", valid);
-
-//   if (!valid) {
-//     return res.status(401).json({ message: "Invalid password" });
-//   }
+ 
 
   const accessToken = generateAccessToken(user);
   console.log('accessToken:-',JSON.stringify(accessToken));
