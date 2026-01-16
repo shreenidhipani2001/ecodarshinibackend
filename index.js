@@ -64,6 +64,11 @@ app.get("/db-test", async (req, res) => {
 FROM pg_tables
 WHERE tablename ILIKE '%user%';`);
     console.log("Tables with 'user' in name:", wwww.rows);
+
+     const xxxx = await pool.query(`SELECT tablename
+FROM pg_tables
+WHERE tablename ILIKE '%user%';`);
+    console.log("Tables with 'user' in name:", xxxx.rows);
     res.json({
       success: true,
       time: result.rows[0],

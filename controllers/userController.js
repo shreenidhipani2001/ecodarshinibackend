@@ -84,6 +84,7 @@ export const loginUser = async (req, res) => {
     console.log("DB URL:", process.env.DATABASE_URL);
     console.log("Login request received");
   const { email, password } = req.body;
+  const email1 = req.body.email;
   console.log("Email:", email);
   console.log("Password:", password);
  try {
@@ -91,8 +92,17 @@ export const loginUser = async (req, res) => {
     'SELECT id, email, password_hash, role FROM users WHERE email = $1',
     [email]
   );
+  console.log("Raw SQL query result:", result);
 
-  if (result.rows.length === 0) {
+  
+
+  if(result?.rows[0]?.email != email1 || result.rows.length === 0 ) {
+    console.log("Email mismatch");
+    return res.status(404).json({ message: "Please check the credentials" });
+  }
+
+  if (result.rows.length === 0 ) {
+    console.log("User not found");
     return res.status(404).json({ message: "User not found" });
   }
 
@@ -107,6 +117,7 @@ export const loginUser = async (req, res) => {
 //   }
 
   const accessToken = generateAccessToken(user);
+  console.log('accessToken:-',JSON.stringify(accessToken));
   const refreshToken = generateRefreshToken(user);
 
   return res
