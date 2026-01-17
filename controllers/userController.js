@@ -46,6 +46,7 @@ export const createUser = async (req, res) => {
     
 
 export const loginUser = async (req, res) => {
+  
     console.log("DB URL:", process.env.DATABASE_URL);
     console.log("Login request received");
      
