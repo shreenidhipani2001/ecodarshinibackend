@@ -46,10 +46,11 @@ export const createUser = async (req, res) => {
     
 
 export const loginUser = async (req, res) => {
-  
+
     console.log("DB URL:", process.env.DATABASE_URL);
     console.log("Login request received");
      
+    
       if (!req.body.email || !req.body.password_hash) {
       return res.status(400).json({ message: "Email and password are required" });
     }
