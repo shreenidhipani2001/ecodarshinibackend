@@ -5,6 +5,7 @@ import { pool } from "../db/pgClient.js";
 
 import bcrypt from "bcrypt";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.js";
+import e from 'express';
 const prisma = new PrismaClient();
  
  
@@ -49,9 +50,7 @@ export const loginUser = async (req, res) => {
     console.log("DB URL:", process.env.DATABASE_URL);
     console.log("Login request received");
      
-      if (!req.body.email || !req.body.password_hash) {
-      return res.status(400).json({ message: "Email and password are required" });
-    }
+   
   const { email, password } = req.body;
   
   const email1 = req.body.email;
@@ -98,12 +97,54 @@ export const loginUser = async (req, res) => {
       message: "Logged in",
       role: user.role,
       userId: user.id,
+      email: user.email,
     });
 } catch (err) {
     console.log("Error during login:", err);
     res.status(500).json({ message: err.message });
   }
 };
+
+
+export const getCurrentUser = async (req, res) => {
+  try {
+    console.log("Request body:", req.body);
+
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+
+    const result = await pool.query(
+      `SELECT id, name, email, role
+       FROM users
+       WHERE id = $1`,
+      [userId]
+    );
+
+    console.log("Database query result:", result);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = result.rows[0];
+
+    return res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error("getCurrentUser error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+
 
 // GET ALL USERS
 export const getAllUsers = async (req, res) => {
@@ -120,11 +161,39 @@ export const getAllUsers = async (req, res) => {
 
 // GET USER BY ID
 export const getUserById = async (req, res) => {
-  const { id } = req.params;
+  
   try {
-    const user = await prisma.user.findUnique({ where: { id } });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
+    console.log("Request body:", req.body);
+
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+
+    const result = await pool.query(
+      `SELECT id, name, email, role,phone
+       FROM users
+       WHERE id = $1`,
+      [userId]
+    );
+
+    console.log("Database query result:", result);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = result.rows[0];
+
+    return res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+      },
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message  });

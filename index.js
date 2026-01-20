@@ -2,9 +2,17 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+
+
+//route imports
 import userRoutes from "./routes/userRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
+import wishRoutes from "./routes/wishRoutes.js";
+import cartRoutes from "./routes/cartRoutes.js";
+
+
+
 import { pool } from "./db/pgClient.js";
 dotenv.config();
 
@@ -26,6 +34,8 @@ app.use(cookieParser());
 app.use("/api/users", userRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/wishes", wishRoutes);
+app.use("/api/cart", cartRoutes);
 
 app.get("/", (req, res) => {
   res.json({
@@ -44,7 +54,7 @@ app.get("/db-test", async (req, res) => {
     });
   } catch (err) {
     console.error("DB TEST ERROR:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message , message: "Database connection failed" });
   }
 });
 
