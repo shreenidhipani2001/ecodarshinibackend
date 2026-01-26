@@ -252,3 +252,48 @@ CREATE INDEX idx_reviews_user_id ON reviews(user_id);
 -- Products Indexes
 CREATE INDEX idx_products_added_by ON products(added_by);
 CREATE INDEX idx_products_bought_by ON products(bought_by);
+
+-- 4. ORDER TRACKING SYSTEM
+-- =============================================
+
+-- Tracking Status Enum
+CREATE TYPE tracking_status AS ENUM (
+  'ORDER_PLACED',
+  'PROCESSING',
+  'PACKED',
+  'SHIPPED',
+  'IN_TRANSIT',
+  'OUT_FOR_DELIVERY',
+  'DELIVERED',
+  'FAILED_DELIVERY',
+  'RETURNED'
+);
+
+-- Order Tracking Table
+CREATE TABLE order_tracking (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL,
+  status tracking_status NOT NULL DEFAULT 'ORDER_PLACED',
+  latitude DECIMAL(10, 8),
+  longitude DECIMAL(11, 8),
+  address_display TEXT,
+  address_road VARCHAR(255),
+  address_city VARCHAR(100),
+  address_state VARCHAR(100),
+  address_country VARCHAR(100),
+  address_postcode VARCHAR(20),
+  osm_id BIGINT,
+  osm_type VARCHAR(10),
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_order_tracking_order
+    FOREIGN KEY (order_id)
+    REFERENCES orders(id)
+    ON DELETE CASCADE
+);
+
+-- Order Tracking Indexes
+CREATE INDEX idx_order_tracking_order_id ON order_tracking(order_id);
+CREATE INDEX idx_order_tracking_status ON order_tracking(status);
+CREATE INDEX idx_order_tracking_created_at ON order_tracking(created_at);

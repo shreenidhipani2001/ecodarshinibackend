@@ -19,7 +19,7 @@ router.post("/login", loginUser);
 router.post("/logout", logoutUser);
 
 // PROTECTED
-router.get("/", authMiddleware, getAllUsers);
+router.get("/", getAllUsers);
 router.post("/me",getCurrentUser)
 router.get("/:id", authMiddleware, getUserById);
 router.put("/:id", updateUser);
