@@ -18,7 +18,7 @@ import {
   getAllCartItems,
   getCartItemById,
   updateCartItem,
-  removeCartItem,getAllUserCartItems
+  removeCartItem,getAllUserCartItems,getCartItemOfUserById
 } from "../controllers/cartController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 
@@ -31,6 +31,7 @@ router.post("/add",  addToCart);
 router.get("/",  getAllCartItems);
 
 // Get cart item by ID
+router.get("/user/:id",  getCartItemOfUserById);
 router.get("/:id",  getCartItemById);
 router.get("/user/:userId",  getAllUserCartItems);
 

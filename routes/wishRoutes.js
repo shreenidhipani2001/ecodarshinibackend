@@ -18,6 +18,7 @@ router.get("/", getAllWishlistItems);
 
 // Get wishlist item by ID
 router.get("/:id", getWishlistItemById);
+router.get("/unique/:id", getWishlistItemById);
 
 // Partial update (change product_id)
 router.patch("/:id", updateWishlistItem);

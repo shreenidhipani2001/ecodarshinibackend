@@ -59,10 +59,10 @@ export const loginUser = async (req, res) => {
 
  try {
   const result = await pool.query(
-    'SELECT id, email, password_hash, role FROM users WHERE email = $1',
+    'SELECT id, email,name, password_hash,phone, role FROM users WHERE email = $1',
     [email]
   );
-  console.log("Raw SQL query result:", result);
+
 
   
 
@@ -98,6 +98,8 @@ export const loginUser = async (req, res) => {
       role: user.role,
       userId: user.id,
       email: user.email,
+      phone: user.phone,
+      name: user.name,
     });
 } catch (err) {
     console.log("Error during login:", err);
@@ -117,25 +119,26 @@ export const getCurrentUser = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, name, email, role
+      `SELECT id, name, email, role ,phone
        FROM users
        WHERE id = $1`,
       [userId]
     );
 
-    console.log("Database query result:", result);
+     
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "User not found" });
     }
 
     const user = result.rows[0];
-
+    console.log("Fetched user:", user);
     return res.json({
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
+        phone: user.phone,
       },
     });
   } catch (err) {
@@ -163,9 +166,10 @@ export const getAllUsers = async (req, res) => {
 export const getUserById = async (req, res) => {
   
   try {
-    console.log("Request body:", req.body);
+    
 
-    const { userId } = req.body;
+    const  userId  = req.params;
+    // console.log("Request body:", req.body);
 
     if (!userId) {
       return res.status(400).json({ message: "userId is required" });
@@ -178,7 +182,7 @@ export const getUserById = async (req, res) => {
       [userId]
     );
 
-    console.log("Database query result:", result);
+    
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -203,18 +207,40 @@ export const getUserById = async (req, res) => {
 // UPDATE USER
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { name, email, phone, role, password } = req.body;
+  const { name, email, phone, password } = req.body;
+  console.log("Update user request for ID:", id);
+  console.log("Update data:", req.body);
+
   try {
-    const data = { name, email, phone, role };
-    if (password) {
-      data.password_hash = await bcrypt.hash(password, 10);
+    // Check if user exists
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE id = $1',
+      [id]
+    );
+
+    if (existingUser.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
     }
-    const updated = await prisma.user.update({
-      where: { id },
-      data,
-    });
-    res.json(updated);
+
+    // Hash password if provided
+    let password_hash = null;
+    if (password) {
+      password_hash = await bcrypt.hash(password, 10);
+    }
+
+    // Update user with raw SQL
+    const result = await pool.query(
+      `UPDATE users
+       SET name = $1, email = $2, phone = $3, password_hash = COALESCE($4, password_hash)
+       WHERE id = $5
+       RETURNING id, name, email, phone, role, created_at`,
+      [name, email, phone, password_hash, id]
+    );
+
+    const updatedUser = result.rows[0];
+    res.json({ message: "User updated successfully", user: updatedUser });
   } catch (err) {
+    console.error("Update user error:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -225,6 +251,24 @@ export const deleteUser = async (req, res) => {
   try {
     await prisma.user.delete({ where: { id } });
     res.json({ message: "User deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// LOGOUT USER
+export const logoutUser = async (req, res) => {
+  try {
+    res
+      .clearCookie("accessToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+      })
+      .clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+      })
+      .json({ message: "Logged out successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

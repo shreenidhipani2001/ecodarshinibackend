@@ -2,6 +2,7 @@ import express from "express";
 import {
   createUser,
   loginUser,
+  logoutUser,
   getAllUsers,
   getUserById,
   updateUser,
@@ -15,12 +16,14 @@ const router = express.Router();
 // PUBLIC
 router.post("/register", createUser);
 router.post("/login", loginUser);
+router.post("/logout", logoutUser);
 
 // PROTECTED
 router.get("/", authMiddleware, getAllUsers);
 router.post("/me",getCurrentUser)
 router.get("/:id", authMiddleware, getUserById);
-router.put("/:id", authMiddleware, updateUser);
+router.put("/:id", updateUser);
+// router.put("/:id", authMiddleware, updateUser);
 router.delete("/:id", authMiddleware, deleteUser);
 
 export default router;

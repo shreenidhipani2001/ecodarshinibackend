@@ -10,7 +10,9 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import wishRoutes from "./routes/wishRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
-
+import reviewRoutes from "./routes/reviewRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 
 import { pool } from "./db/pgClient.js";
@@ -36,6 +38,9 @@ app.use("/api/uploads", uploadRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/wishes", wishRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/review", reviewRoutes);
+app.use("/api/categories",categoryRoutes);
+app.use("/api/payments",paymentRoutes);
 
 app.get("/", (req, res) => {
   res.json({
