@@ -15,15 +15,25 @@ export const createUser = async (req, res) => {
   const { name, email, password, phone, role } = req.body;
 
   try {
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing)
+    // Check if email already exists
+    const existing = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    );
+    if (existing.rows.length > 0) {
       return res.status(400).json({ message: "Email already exists" });
+    }
 
     const password_hash = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
-      data: { name, email, password_hash, phone, role },
-    });
+    const result = await pool.query(
+      `INSERT INTO users (name, email, password_hash, phone, role)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, name, email, phone, role, created_at`,
+      [name, email, password_hash, phone, role || 'user']
+    );
+
+    const user = result.rows[0];
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
@@ -40,6 +50,7 @@ export const createUser = async (req, res) => {
       .status(201)
       .json({ message: "User created", user });
   } catch (err) {
+    console.log('error in createUser:', err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -154,8 +165,16 @@ export const getAllUsers = async (req, res) => {
     console.log("Fetching all users");
   try {
     
-    const users = await prisma.user.findMany();
-    res.json(users);
+     
+    const users = await pool.query(
+      `SELECT id, name, email, role ,phone
+       FROM users ORDER BY created_at DESC
+        `
+    );
+    
+    
+    
+    res.json(users.rows);
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message , message1: "Error fetching users"});

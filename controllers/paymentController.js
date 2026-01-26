@@ -3,14 +3,15 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 
 // Initialize Razorpay instance
-// const razorpay = new Razorpay({
-//   key_id: process.env.RAZORPAY_KEY_ID,
-//   key_secret: process.env.RAZORPAY_KEY_SECRET,
-// });
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 // CREATE RAZORPAY ORDER
 export const createRazorpayOrder = async (req, res) => {
   const { amount, currency = "INR", receipt, notes } = req.body;
+  console.log('Request body for creating Razorpay order:', req.body);
 
   try {
     if (!amount) {
@@ -34,6 +35,7 @@ export const createRazorpayOrder = async (req, res) => {
       key_id: process.env.RAZORPAY_KEY_ID,
     });
   } catch (err) {
+    console.log("error in create razor pay order::::",err);
     console.error("Razorpay order creation error:", err);
     res.status(500).json({ message: err.message });
   }
@@ -76,7 +78,7 @@ export const verifyRazorpayPayment = async (req, res) => {
       `INSERT INTO payments (razorpay_order_id, razorpay_payment_id, razorpay_signature, amount, status)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [razorpay_order_id, razorpay_payment_id, razorpay_signature, amount, "completed"]
+      [razorpay_order_id, razorpay_payment_id, razorpay_signature, amount, "SUCCESS"]
     );
 
     res.status(200).json({
@@ -132,7 +134,14 @@ export const createPayment = async (req, res) => {
 export const getAllPayments = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM payments ORDER BY created_at DESC"
+      `SELECT 
+          p.*,
+          o.*
+        FROM payments p
+        LEFT JOIN orders o 
+          ON p.razorpay_payment_id = o.payment_id
+        ORDER BY p.created_at DESC; 
+       `
     );
 
     res.json(result.rows);
