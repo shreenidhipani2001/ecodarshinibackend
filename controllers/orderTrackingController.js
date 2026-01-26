@@ -256,18 +256,19 @@ export const getAllTrackingEntriesForAUser = async (req, res) => {
 
     console.log('user id is::::',req.params.userId);
     const result = await pool.query(
-      `SELECT 
+      `SELECT
           t.*,
           o.total_amount,
-          o.status,
+          o.status AS order_status,
           o.user_id,
           u.name AS user_name
        FROM order_tracking t
-       JOIN orders o 
+       JOIN orders o
          ON t.order_id = o.id
        JOIN users u
          ON o.user_id = u.id
        WHERE o.user_id = $1
+       ORDER BY t.created_at ASC
        `,
       [req.params.userId]
     );
