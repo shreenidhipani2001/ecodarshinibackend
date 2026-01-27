@@ -57,6 +57,7 @@ export const getAllOrders = async (req, res) => {
        JOIN users u ON o.user_id = u.id
        ORDER BY o.created_at DESC`
     );
+    console.log("Fetched orders:", result.rows[0]);
 
     res.json(result.rows);
   } catch (err) {

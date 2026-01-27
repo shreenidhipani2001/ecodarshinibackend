@@ -114,6 +114,7 @@ export const getCartItemById = async (req, res) => {
 
   try {
     const userId = req.user.id;
+    console.log("Authenticated user ID:", userId);
 
     const result = await pool.query(
       `SELECT
@@ -133,52 +134,126 @@ export const getCartItemById = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Cart item not found" });
+      return res.status(200).json({ message: "Cart item not found" });
     }
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.log('Error:--',err);
     res.status(500).json({ message: err.message });
   }
 };
+// export const getCartItemOfUserById = async (req, res) => {
+//   const { id } = req.params;
+//   console.log("Fetching cart item with ID 148:", id);
+
+//   try {
+//     // const userId = req.user.id;
+// console.log(`SELECT
+//          c.id,
+//          c.quantity,
+//          c.created_at,
+//          p.id AS product_id,
+//          p.name,
+//          p.price,
+//          p.cms_image_ids,
+//          p.slug,
+//          (p.price * c.quantity) AS total_price
+//        FROM cart_items c
+//        JOIN products p ON c.product_id = p.id
+//        WHERE  c.user_id = ${id}`);
+//     const result = await pool.query(
+//       `SELECT
+//   c.id,
+//   c.quantity,
+//   c.created_at,
+//   p.id AS product_id,
+//   p.name,
+//   p.price,
+//   p.cms_image_ids,
+//   p.slug,
+//   (p.price * c.quantity) AS total_price
+// FROM cart_items c
+// JOIN products p ON c.product_id = p.id
+// WHERE c.user_id = $1`,
+//       [ id]
+//     );
+
+//     if (result.rows.length === 0) {
+//       console.log("Cart item not found");
+//       return res.status(200).json({ message: "Cart item not found" });
+//     }
+//     console.log("Cart item found:", result.rows);
+
+//     // res.json(result.rows);
+//     return result.rows.map(row => ({
+//       id: row.id,
+//       product_id: row.product_id,   // ✅ MUST exist
+//       name: row.name,
+//       price: row.price,
+//       total_price: row.total_price,
+//       quantity: row.quantity,
+//       slug: row.slug,
+//       cms_image_ids: row.cms_image_ids,
+//       created_at: row.created_at,
+//     }));
+    
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: err.message });
+//   }
+// };
+
+// UPDATE CART ITEM
+
 export const getCartItemOfUserById = async (req, res) => {
   const { id } = req.params;
-  console.log("Fetching cart item with ID:", id);
+  console.log("Fetching cart item for user ID:", id);
 
   try {
-    // const userId = req.user.id;
-
     const result = await pool.query(
       `SELECT
-         c.id,
-         c.quantity,
-         c.created_at,
-         p.id AS product_id,
-         p.name,
-         p.price,
-         p.cms_image_ids,
-         p.slug,
-         (p.price * c.quantity) AS total_price
-       FROM cart_items c
-       JOIN products p ON c.product_id = p.id
-       WHERE  c.user_id = $1`,
-      [ id]
+        c.id,
+        c.quantity,
+        c.created_at,
+        p.id AS product_id,
+        p.name,
+        p.price,
+        p.cms_image_ids,
+        p.slug,
+        (p.price * c.quantity) AS total_price
+      FROM cart_items c
+      JOIN products p ON c.product_id = p.id
+      WHERE c.user_id = $1`,
+      [id]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Cart item not found" });
+      console.log("Cart item not found");
+      return res.status(200).json([]); // send empty array
     }
-    console.log("Cart item found:", result.rows);
 
-    res.json(result.rows);
+    const cartItems = result.rows.map(row => ({
+      id: row.id,
+      product_id: row.product_id,
+      name: row.name,
+      price: row.price,
+      total_price: row.total_price,
+      quantity: row.quantity,
+      slug: row.slug,
+      cms_image_ids: row.cms_image_ids,
+      created_at: row.created_at,
+    }));
+
+    console.log("Cart items found:", cartItems);
+    return res.status(200).json(cartItems); // ✅ send response
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// UPDATE CART ITEM
+
 export const updateCartItem = async (req, res) => {
   const { id } = req.params;
   const { quantity } = req.body;

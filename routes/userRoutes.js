@@ -9,8 +9,7 @@ import {
   deleteUser,
   getCurrentUser,
 } from "../controllers/userController.js";
-import { authMiddleware } from "../middlewares/authMiddleware.js";
-
+ 
 const router = express.Router();
 
 // PUBLIC
@@ -21,9 +20,8 @@ router.post("/logout", logoutUser);
 // PROTECTED
 router.get("/", getAllUsers);
 router.post("/me",getCurrentUser)
-router.get("/:id", authMiddleware, getUserById);
+router.get("/:id", getUserById);
 router.put("/:id", updateUser);
-// router.put("/:id", authMiddleware, updateUser);
-router.delete("/:id", authMiddleware, deleteUser);
+router.delete("/:id", deleteUser);
 
 export default router;
