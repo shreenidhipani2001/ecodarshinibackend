@@ -5,6 +5,7 @@ import {
     getProductById,
     updateProduct,
     deleteProduct,
+    getAllProductsCat
 } from "../controllers/productController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import {uploadProductImages} from "../config/multerCloudinary.js";
@@ -23,8 +24,9 @@ router.post(
 
 router.post("/add",   createProduct);
 router.get("/", getAllProducts);
+router.get("/cat", getAllProductsCat);
 router.get("/:id", getProductById);
 router.put("/:id",   updateProduct);
-router.delete("/:id", authMiddleware,  deleteProduct);
+router.delete("/:id",  deleteProduct);
 
 export default router;

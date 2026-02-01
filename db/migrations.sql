@@ -297,3 +297,39 @@ CREATE TABLE order_tracking (
 CREATE INDEX idx_order_tracking_order_id ON order_tracking(order_id);
 CREATE INDEX idx_order_tracking_status ON order_tracking(status);
 CREATE INDEX idx_order_tracking_created_at ON order_tracking(created_at);
+
+-- 5. SUBCATEGORIES SYSTEM
+-- =============================================
+
+-- Sub-Categories Table
+CREATE TABLE sub_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category_id UUID NOT NULL,
+  name VARCHAR(150) NOT NULL,
+  slug VARCHAR(150) NOT NULL,
+  cms_image_id TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_sub_categories_category
+    FOREIGN KEY (category_id)
+    REFERENCES categories(id)
+    ON DELETE RESTRICT,
+
+  CONSTRAINT uq_sub_category_slug UNIQUE (category_id, slug)
+);
+
+-- Add subcategory_id to products
+ALTER TABLE products
+ADD COLUMN subcategory_id UUID;
+
+-- Add foreign key constraint for subcategory_id
+ALTER TABLE products
+ADD CONSTRAINT fk_products_subcategory
+  FOREIGN KEY (subcategory_id)
+  REFERENCES sub_categories(id)
+  ON DELETE RESTRICT;
+
+-- Sub-Categories Indexes
+CREATE INDEX idx_sub_categories_category_id ON sub_categories(category_id);
+CREATE INDEX idx_sub_categories_slug ON sub_categories(slug);
+CREATE INDEX idx_products_subcategory_id ON products(subcategory_id);
