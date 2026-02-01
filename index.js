@@ -12,9 +12,11 @@ import wishRoutes from "./routes/wishRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
+import subcategoryRoutes from "./routes/subcategoryRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import orderTrackingRoutes from "./routes/orderTrackingRoutes.js";
+import blogRoutes from "./routes/blogRoutes.js";
 
 import { pool } from "./db/pgClient.js";
 dotenv.config();
@@ -37,10 +39,12 @@ app.use(cookieParser());
 app.use("/api/users", userRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/blogs",blogRoutes)
 app.use("/api/wishes", wishRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/review", reviewRoutes);
 app.use("/api/categories",categoryRoutes);
+app.use("/api/subcategories",subcategoryRoutes);
 app.use("/api/payments",paymentRoutes);
 app.use("/api/orders",orderRoutes);
 app.use("/api/track",orderTrackingRoutes);
