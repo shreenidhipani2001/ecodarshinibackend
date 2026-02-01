@@ -121,6 +121,25 @@ export const getOrdersByUserId = async (req, res) => {
   }
 };
 
+
+export const cancelOrder = async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    await pool.query(
+      `UPDATE orders
+       SET is_cancelled = TRUE,
+           cancel_desc = 'User Cancelled'
+       WHERE id = $1`,
+      [orderId]
+    );
+
+    res.json({ message: 'Cancelled' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // UPDATE ORDER
 export const updateOrder = async (req, res) => {
   const { id } = req.params;

@@ -6,6 +6,7 @@ import {
   getOrdersByUserId,
   updateOrder,
   deleteOrder,
+  cancelOrder
 } from "../controllers/orderController.js";
 
 const router = express.Router();
@@ -16,5 +17,7 @@ router.get("/user/:userId", getOrdersByUserId);
 router.post("/add", createOrder);
 router.put("/:id", updateOrder);
 router.delete("/:id", deleteOrder);
+router.put('/cancel/:orderId', cancelOrder);
+
 
 export default router;

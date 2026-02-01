@@ -281,7 +281,146 @@ export const getAllProductsCat = async (req, res) => {
 
 
 
+// export const getAll5Latest = async (req, res) => {
+//   try {
+//     const page  = parseInt(req.query.page)  || 1;
+//     const limit = parseInt(req.query.limit) || 20;
+
+//     const offset = (page - 1) * limit;
+
+//     const search         = req.query.search || "";
+//     const category_id    = req.query.category_id    || null;
+//     const sub_category_id = req.query.sub_category_id || null;
+
+//     // Build WHERE conditions
+//     let whereClause = "WHERE p.is_active = true";
+//     const queryParams = [];
+//     let paramIndex = 1;
+
+//     if (search) {
+//       whereClause += ` AND p.name ILIKE '%' || $${paramIndex} || '%'`;
+//       queryParams.push(search);
+//       paramIndex++;
+//     }
+//     if (category_id) {
+//       whereClause += ` AND p.category_id = $${paramIndex}`;
+//       queryParams.push(category_id);
+//       paramIndex++;
+//     }
+//     if (sub_category_id) {
+//       whereClause += ` AND p.sub_category_id = $${paramIndex}`;
+//       queryParams.push(sub_category_id);
+//       paramIndex++;
+//     }
+
+//     // 1. Total count (always needed so frontend knows when to stop)
+//     const countQuery = `
+//       SELECT COUNT(*) as total 
+//       FROM products p
+//       ${whereClause}
+//     `;
+//     const countResult = await pool.query(countQuery, queryParams);
+//     const total = parseInt(countResult.rows[0].total);
+
+//     // 2. Fetch only current page's products
+//     const dataQuery = `
+//       SELECT p.*, 
+//              c.name as category_name, 
+//              s.name as subcategory_name
+//       FROM products p
+//       JOIN categories c ON p.category_id = c.id
+//       LEFT JOIN sub_categories s ON p.sub_category_id = s.id
+//       ${whereClause}
+//       ORDER BY p.created_at DESC
+//       LIMIT 5
+//     `;
+
+//     const dataResult = await pool.query(dataQuery, [
+//       ...queryParams,
+//       limit,
+//       offset,
+//     ]);
+
+//     const productsWithImages = await attachImagesToProducts(dataResult.rows);
+
+//     res.json({
+//       products: productsWithImages,
+//       total,              // important for knowing last page
+//       page,
+//       limit,
+//       totalPages: Math.ceil(total / limit),
+//     });
+//   } catch (err) {
+//     console.error("Error in catalogue products:", err);
+//     res.status(500).json({ message: err.message });
+//   }
+// };
+
+
+
+
 // GET PRODUCT BY ID
+
+
+export const getAll5Latest = async (req, res) => {
+  try {
+    const search = req.query.search || "";
+    const category_id = req.query.category_id || null;
+    const sub_category_id = req.query.sub_category_id || null;
+
+    // Build WHERE conditions
+    let whereClause = "WHERE p.is_active = true";
+    const queryParams = [];
+    let paramIndex = 1;
+
+    if (search) {
+      whereClause += ` AND p.name ILIKE '%' || $${paramIndex} || '%'`;
+      queryParams.push(search);
+      paramIndex++;
+    }
+    if (category_id) {
+      whereClause += ` AND p.category_id = $${paramIndex}`;
+      queryParams.push(category_id);
+      paramIndex++;
+    }
+    if (sub_category_id) {
+      whereClause += ` AND p.sub_category_id = $${paramIndex}`;
+      queryParams.push(sub_category_id);
+      paramIndex++;
+    }
+
+    // Fetch only 5 latest products
+    const dataQuery = `
+      SELECT p.*, 
+             c.name as category_name, 
+             s.name as subcategory_name
+      FROM products p
+      JOIN categories c ON p.category_id = c.id
+      LEFT JOIN sub_categories s ON p.sub_category_id = s.id
+      ${whereClause}
+      ORDER BY p.created_at DESC
+      LIMIT 5
+    `;
+
+    // Only pass queryParams (no limit/offset since LIMIT 5 is hardcoded)
+    const dataResult = await pool.query(dataQuery, queryParams);
+
+    const productsWithImages = await attachImagesToProducts(dataResult.rows);
+
+    res.json({
+      products: productsWithImages,
+      total: productsWithImages.length,
+    });
+  } catch (err) {
+    console.error("Error in getAll5Latest:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+
+
+
 export const getProductById = async (req, res) => {
   const { id } = req.params;
 
@@ -393,6 +532,69 @@ export const deleteProduct = async (req, res) => {
     res.json({ message: "Product deleted" });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET PRODUCTS BY IDS (for cart/wishlist - with pagination for images)
+// POST /api/products/by-ids
+// Body: { product_ids: [...], page: 1, limit: 10 }
+export const getProductsByIds = async (req, res) => {
+  try {
+    const { product_ids } = req.body;
+    const page = parseInt(req.body.page) || 1;
+    const limit = parseInt(req.body.limit) || 10;
+
+    if (!product_ids || !Array.isArray(product_ids) || product_ids.length === 0) {
+      return res.json({ products: [], total: 0, page, limit, totalPages: 0 });
+    }
+
+    // Remove duplicates
+    const uniqueIds = [...new Set(product_ids)];
+    const total = uniqueIds.length;
+    const totalPages = Math.ceil(total / limit);
+
+    // Get the slice of IDs for this page
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const pageIds = uniqueIds.slice(startIndex, endIndex);
+
+    if (pageIds.length === 0) {
+      return res.json({ products: [], total, page, limit, totalPages });
+    }
+
+    // Build placeholders for SQL IN clause
+    const placeholders = pageIds.map((_, i) => `$${i + 1}`).join(', ');
+
+    const dataQuery = `
+      SELECT p.*,
+             c.name as category_name,
+             s.name as subcategory_name
+      FROM products p
+      JOIN categories c ON p.category_id = c.id
+      LEFT JOIN sub_categories s ON p.sub_category_id = s.id
+      WHERE p.id IN (${placeholders})
+    `;
+
+    const dataResult = await pool.query(dataQuery, pageIds);
+
+    // Attach images ONLY for this page's products
+    const productsWithImages = await attachImagesToProducts(dataResult.rows);
+
+    // Return in the same order as requested
+    const orderedProducts = pageIds.map(id =>
+      productsWithImages.find(p => p.id === id)
+    ).filter(Boolean);
+
+    res.json({
+      products: orderedProducts,
+      total,
+      page,
+      limit,
+      totalPages,
+    });
+  } catch (err) {
+    console.error("Error fetching products by IDs:", err);
     res.status(500).json({ message: err.message });
   }
 };

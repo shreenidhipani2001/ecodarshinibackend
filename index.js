@@ -16,6 +16,7 @@ import subcategoryRoutes from "./routes/subcategoryRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import orderTrackingRoutes from "./routes/orderTrackingRoutes.js";
+import blogRoutes from "./routes/blogRoutes.js";
 
 import { pool } from "./db/pgClient.js";
 dotenv.config();
@@ -38,6 +39,7 @@ app.use(cookieParser());
 app.use("/api/users", userRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/blogs",blogRoutes)
 app.use("/api/wishes", wishRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/review", reviewRoutes);
