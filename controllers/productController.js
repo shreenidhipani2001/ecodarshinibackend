@@ -280,6 +280,85 @@ export const getAllProductsCat = async (req, res) => {
 };
 
 
+export const getAllProductsCategorywise = async (req, res) => {
+  const { id } = req.params; // category id
+console.log("Category ID:", id);
+  try {
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const search = req.query.search || "";
+    const sub_category_id = req.query.sub_category_id || null;
+
+    let queryParams = [];
+    let paramIndex = 1;
+
+    // BASE WHERE
+    let whereClause = `WHERE p.is_active = true AND p.category_id = $${paramIndex}`;
+    queryParams.push(id);
+    paramIndex++;
+
+    // SEARCH
+    if (search) {
+      whereClause += ` AND p.name ILIKE '%' || $${paramIndex} || '%'`;
+      queryParams.push(search);
+      paramIndex++;
+    }
+
+    // SUB CATEGORY
+    if (sub_category_id) {
+      whereClause += ` AND p.sub_category_id = $${paramIndex}`;
+      queryParams.push(sub_category_id);
+      paramIndex++;
+    }
+
+    // COUNT QUERY
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM products p
+      ${whereClause}
+    `;
+
+    const countResult = await pool.query(countQuery, queryParams);
+    const total = parseInt(countResult.rows[0].total);
+
+    // DATA QUERY
+    const dataQuery = `
+      SELECT 
+        p.*,
+        c.name as category_name,
+        s.name as subcategory_name
+      FROM products p
+      JOIN categories c ON p.category_id = c.id
+      LEFT JOIN sub_categories s ON p.sub_category_id = s.id
+      ${whereClause}
+      ORDER BY p.created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+
+    const dataResult = await pool.query(dataQuery, [
+      ...queryParams,
+      limit,
+      offset,
+    ]);
+
+    const productsWithImages = await attachImagesToProducts(dataResult.rows);
+
+    res.json({
+      products: productsWithImages,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
+
+  } catch (err) {
+    console.error("Error in catalogue products:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 
 // export const getAll5Latest = async (req, res) => {
 //   try {

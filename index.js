@@ -27,7 +27,9 @@ const PORT = process.env.PORT || 3004;
 // IMPORTANT: CORS must come BEFORE routes
 app.use(
   cors({
-     origin: "https://eco-darsini-frontend.vercel.app",
+     origin: "*",
+    //  origin: "https://eco-darsini-frontend.vercel.app",
+
     credentials: true,
   })
 );
