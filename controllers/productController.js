@@ -186,9 +186,10 @@ export const getAllProducts = async (req, res) => {
       limit,
       offset,
     ]);
-
+    // console.log('dataResult:--'+JSON.stringify(dataResult.rows));
     // 3. Attach images ONLY for this page's products (max ~100 fetches)
     const productsWithImages = await attachImagesToProducts(dataResult.rows);
+    // console.log('productsWithImages:-',productsWithImages);
 
     res.json({
       products: productsWithImages,
@@ -282,7 +283,7 @@ export const getAllProductsCat = async (req, res) => {
 
 export const getAllProductsCategorywise = async (req, res) => {
   const { id } = req.params; // category id
-console.log("Category ID:", id);
+ 
   try {
     const page  = parseInt(req.query.page)  || 1;
     const limit = parseInt(req.query.limit) || 20;

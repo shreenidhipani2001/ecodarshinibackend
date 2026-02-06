@@ -17,6 +17,8 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import orderTrackingRoutes from "./routes/orderTrackingRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
+import testimonialRoutes from "./routes/testimonialRoutes.js";
+
 
 import { pool } from "./db/pgClient.js";
 dotenv.config();
@@ -50,6 +52,7 @@ app.use("/api/subcategories",subcategoryRoutes);
 app.use("/api/payments",paymentRoutes);
 app.use("/api/orders",orderRoutes);
 app.use("/api/track",orderTrackingRoutes);
+app.use("/api/testimonials", testimonialRoutes);
 
 app.get("/", (req, res) => {
   res.json({
