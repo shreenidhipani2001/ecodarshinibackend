@@ -18,7 +18,7 @@ import orderRoutes from "./routes/orderRoutes.js";
 import orderTrackingRoutes from "./routes/orderTrackingRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
 import testimonialRoutes from "./routes/testimonialRoutes.js";
-
+import eventRoutes from "./routes/eventRoutes.js";
 
 import { pool } from "./db/pgClient.js";
 dotenv.config();
@@ -30,7 +30,8 @@ const PORT = process.env.PORT || 3004;
 app.use(
   cors({
      origin: "*",
-    //  origin: "https://eco-darsini-frontend.vercel.app",
+     origin: "https://eco-darsini-frontend.vercel.app",
+     origin: "http://localhost:3000",
 
     credentials: true,
   })
@@ -53,6 +54,8 @@ app.use("/api/payments",paymentRoutes);
 app.use("/api/orders",orderRoutes);
 app.use("/api/track",orderTrackingRoutes);
 app.use("/api/testimonials", testimonialRoutes);
+app.use("/api/events", eventRoutes);
+
 
 app.get("/", (req, res) => {
   res.json({

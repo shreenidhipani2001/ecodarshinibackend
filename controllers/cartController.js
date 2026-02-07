@@ -21,7 +21,7 @@ export const addToCart = async (req, res) => {
       "SELECT * FROM products WHERE id = $1",
       [product_id]
     );
-console.log('productCheck::::',productCheck.rows);
+
     if (productCheck.rows.length === 0) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -114,7 +114,7 @@ export const getCartItemById = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    console.log("Authenticated user ID:", userId);
+     
 
     const result = await pool.query(
       `SELECT
@@ -208,7 +208,7 @@ export const getCartItemById = async (req, res) => {
 
 export const getCartItemOfUserById = async (req, res) => {
   const { id } = req.params;
-  console.log("Fetching cart item for user ID:", id);
+ 
 
   try {
     const result = await pool.query(
@@ -245,7 +245,7 @@ export const getCartItemOfUserById = async (req, res) => {
       created_at: row.created_at,
     }));
 
-    console.log("Cart items found:", cartItems);
+   
     return res.status(200).json(cartItems); // ✅ send response
   } catch (err) {
     console.error(err);
@@ -308,7 +308,7 @@ export const removeCartItem = async (req, res) => {
       [id, userId]
     );
 
-    console.log('existing::::',existing.rows);
+   
     if (existing.rows.length === 0) {
       return res.status(404).json({ message: "Cart item not found" });
     }
