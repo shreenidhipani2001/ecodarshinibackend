@@ -27,16 +27,17 @@ const app = express();
 const PORT = process.env.PORT || 3004;
 
 // IMPORTANT: CORS must come BEFORE routes
-app.use(
-  cors({
-     origin: "*",
-     origin: "https://eco-darsini-frontend.vercel.app",
-     origin: "http://localhost:3000",
+// app.use(
+//   cors({
+//      origin: "*",
+//      origin: "https://eco-darsini-frontend.vercel.app",
+//      origin: "http://localhost:3000",
 
-    credentials: true,
-  })
-);
+//     credentials: true,
+//   })
+// );
 
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
  
