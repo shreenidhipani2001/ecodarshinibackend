@@ -157,7 +157,7 @@ export const getAllTestimonials = async (req, res) => {
       );
   
       let testimonials = result.rows;
-      console.log('testimonials:-',testimonials)
+       
   
       // Normalize image fields so utility can work
       testimonials = testimonials.map(t => {
@@ -176,7 +176,6 @@ export const getAllTestimonials = async (req, res) => {
   
       // Attach images using existing utility
       const testimonialsWithImages = await attachImagesToProducts(testimonials);
-      console.log('testimonialsWithImages:-'+JSON.stringify(testimonialsWithImages));
   
       res.json(testimonialsWithImages);
     } catch (err) {
