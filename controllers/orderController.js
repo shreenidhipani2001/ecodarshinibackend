@@ -1,52 +1,169 @@
 import { pool } from "../db/pgClient.js";
 
 // CREATE ORDER
+// export const createOrder = async (req, res) => {
+//   const { user_id, total_amount, status, payment_id, product_id } = req.body;
+
+//   try {
+//     // Validation
+//     if (!user_id || !total_amount) {
+//       return res.status(400).json({
+//         message: "user_id and total_amount are required"
+//       });
+//     }
+
+//     // Check if user exists
+//     const userCheck = await pool.query(
+//       "SELECT * FROM users WHERE id = $1",
+//       [user_id]
+//     );
+
+//     if (userCheck.rows.length === 0) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     // Check if product exists if provided
+//     if (product_id) {
+//       const productCheck = await pool.query(
+//         "SELECT * FROM products WHERE id = $1",
+//         [product_id]
+//       );
+
+//       if (productCheck.rows.length === 0) {
+//         return res.status(404).json({ message: "Product not found" });
+//       }
+//     }
+
+//     const result = await pool.query(
+//       `INSERT INTO orders (user_id, total_amount, status, payment_id, product_id)
+//        VALUES ($1, $2, $3, $4, $5)
+//        RETURNING *`,
+//       [user_id, total_amount, status || 'CREATED', payment_id, product_id]
+//     );
+
+//     res.status(201).json(result.rows[0]);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: err.message });
+//   }
+// };
+
 export const createOrder = async (req, res) => {
   const { user_id, total_amount, status, payment_id, product_id } = req.body;
 
+  const client = await pool.connect();
+
   try {
-    // Validation
+    await client.query("BEGIN");
+
+    // ---------------- VALIDATION ----------------
     if (!user_id || !total_amount) {
+      await client.query("ROLLBACK");
       return res.status(400).json({
         message: "user_id and total_amount are required"
       });
     }
 
-    // Check if user exists
-    const userCheck = await pool.query(
-      "SELECT * FROM users WHERE id = $1",
+    // ---------------- USER CHECK ----------------
+    const userCheck = await client.query(
+      "SELECT id FROM users WHERE id = $1",
       [user_id]
     );
 
     if (userCheck.rows.length === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if product exists if provided
+    // ---------------- PRODUCT CHECK (OPTIONAL) ----------------
     if (product_id) {
-      const productCheck = await pool.query(
-        "SELECT * FROM products WHERE id = $1",
+      const productCheck = await client.query(
+        "SELECT id FROM products WHERE id = $1",
         [product_id]
       );
 
       if (productCheck.rows.length === 0) {
+        await client.query("ROLLBACK");
         return res.status(404).json({ message: "Product not found" });
       }
     }
 
-    const result = await pool.query(
+    // ---------------- CREATE ORDER ----------------
+    const orderResult = await client.query(
       `INSERT INTO orders (user_id, total_amount, status, payment_id, product_id)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [user_id, total_amount, status || 'CREATED', payment_id, product_id]
+      [user_id, total_amount, status || "CREATED", payment_id, product_id]
     );
 
-    res.status(201).json(result.rows[0]);
+    const order = orderResult.rows[0];
+
+    // ---------------- FETCH CART ITEMS ----------------
+    const cartItemsResult = await client.query(
+      `SELECT c.product_id, c.quantity, p.price
+       FROM cart_items c
+       JOIN products p ON p.id = c.product_id
+       WHERE c.user_id = $1`,
+      [user_id]
+    );
+
+    
+
+    const cartItems = cartItemsResult.rows;
+
+    // ---------------- BULK INSERT ORDER ITEMS ----------------
+    if (cartItems.length > 0) {
+      const values = [];
+      const placeholders = [];
+
+      cartItems.forEach((item, index) => {
+        const base = index * 4;
+
+        placeholders.push(
+          `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`
+        );
+
+        values.push(order.id, item.product_id, item.price, item.quantity);
+      });
+
+      await client.query(
+        `INSERT INTO order_items (order_id, product_id, price, quantity)
+         VALUES ${placeholders.join(",")}`,
+        values
+      );
+
+      // ---------------- STOCK UPDATE (SEQUENTIAL SAFE) ----------------
+      for (const item of cartItems) {
+        await client.query(
+          `UPDATE products
+           SET stock = stock - $1,
+               bought_by = $2
+           WHERE id = $3`,
+          [item.quantity, user_id, item.product_id]
+        );
+      }
+    }
+
+    // ---------------- CLEAR CART ----------------
+    await client.query(
+      `DELETE FROM cart_items WHERE user_id = $1`,
+      [user_id]
+    );
+
+    await client.query("COMMIT");
+
+    // SAME RESPONSE STYLE
+    res.status(201).json(order);
+
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error(err);
     res.status(500).json({ message: err.message });
+  } finally {
+    client.release();
   }
 };
+
 
 // GET ALL ORDERS
 export const getAllOrders = async (req, res) => {
@@ -122,25 +239,68 @@ export const getOrdersByUserId = async (req, res) => {
 };
 
 
+// export const cancelOrder = async (req, res) => {
+//   const { orderId } = req.params;
+
+//   try {
+//     await pool.query(
+//       `UPDATE orders
+//        SET is_cancelled = TRUE,
+//            cancel_desc = 'User Cancelled',status='CANCELLED'
+//        WHERE id = $1`,
+//       [orderId]
+//     );
+
+//     res.json({ message: 'Cancelled' });
+//   } catch (err) {
+//     console.log('error:-',err)
+//     res.status(500).json({ message: err.message });
+//   }
+// };
+
+// UPDATE ORDER
 export const cancelOrder = async (req, res) => {
   const { orderId } = req.params;
 
   try {
+    // 1. Cancel the order
     await pool.query(
       `UPDATE orders
        SET is_cancelled = TRUE,
-           cancel_desc = 'User Cancelled'
+           cancel_desc = 'User Cancelled',
+           status = 'CANCELLED'
        WHERE id = $1`,
       [orderId]
     );
 
-    res.json({ message: 'Cancelled' });
+    // 2. Insert tracking event
+    await pool.query(
+      `INSERT INTO order_tracking (
+        order_id,
+        status,
+        notes
+      )
+      VALUES ($1, $2, $3)`,
+      [
+        orderId,
+        'FAILED_DELIVERY',
+        'Order cancelled by user'
+      ]
+    );
+
+    res.json({ message: 'Order Cancelled Successfully' });
+
   } catch (err) {
+    console.error('Cancel error:', err);
     res.status(500).json({ message: err.message });
   }
 };
 
-// UPDATE ORDER
+
+
+
+
+
 export const updateOrder = async (req, res) => {
   const { id } = req.params;
   const { total_amount, status, payment_id, product_id } = req.body;

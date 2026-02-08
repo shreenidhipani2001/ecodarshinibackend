@@ -32,8 +32,8 @@ export const createBlog = async (req, res) => {
         LEFT JOIN users u ON b.added_by = u.id
         ORDER BY b.created_at DESC
       `);
-  console.log("Fetched blogs:", result.rows);
-      res.json(result.rows);
+      const blogsWithImages = await attachImagesToProducts(result.rows);
+      res.json(blogsWithImages);
     } catch (err) {
         console.log("Error fetching blogs:", err);
       res.status(500).json({ message: err.message });
@@ -43,18 +43,19 @@ export const createBlog = async (req, res) => {
   
   export const getBlogById = async (req, res) => {
     const { id } = req.params;
-  
+
     try {
       const result = await pool.query(
         "SELECT * FROM blogs WHERE id = $1",
         [id]
       );
-  
+
       if (result.rows.length === 0) {
         return res.status(404).json({ message: "Blog not found" });
       }
-  
-      res.json(result.rows[0]);
+
+      const blogWithImages = await attachImagesToProduct(result.rows[0]);
+      res.json(blogWithImages);
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
