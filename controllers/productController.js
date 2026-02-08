@@ -361,6 +361,84 @@ export const getAllProductsCategorywise = async (req, res) => {
 };
 
 
+
+
+export const getAllProductsCategorywisequery = async (req, res) => {
+  const id = req.query.id; // <-- changed
+console.log('id came:-',id)
+  try {
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const search = req.query.search || "";
+    const sub_category_id = req.query.sub_category_id || null;
+
+    let queryParams = [];
+    let paramIndex = 1;
+
+    let whereClause = `WHERE p.is_active = true AND p.category_id = $${paramIndex}`;
+    queryParams.push(id);
+    paramIndex++;
+
+    if (search) {
+      whereClause += ` AND p.name ILIKE '%' || $${paramIndex} || '%'`;
+      queryParams.push(search);
+      paramIndex++;
+    }
+
+    if (sub_category_id) {
+      whereClause += ` AND p.sub_category_id = $${paramIndex}`;
+      queryParams.push(sub_category_id);
+      paramIndex++;
+    }
+
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM products p
+      ${whereClause}
+    `;
+
+    const countResult = await pool.query(countQuery, queryParams);
+    const total = parseInt(countResult.rows[0].total);
+
+    const dataQuery = `
+      SELECT 
+        p.*,
+        c.name as category_name,
+        s.name as subcategory_name
+      FROM products p
+      JOIN categories c ON p.category_id = c.id
+      LEFT JOIN sub_categories s ON p.sub_category_id = s.id
+      ${whereClause}
+      ORDER BY p.created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+
+    const dataResult = await pool.query(dataQuery, [
+      ...queryParams,
+      limit,
+      offset,
+    ]);
+
+    const productsWithImages = await attachImagesToProducts(dataResult.rows);
+    
+    res.json({
+      products: productsWithImages,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({error:'error in fetching', message: err.message });
+  }
+
+};
+
+
 // export const getAll5Latest = async (req, res) => {
 //   try {
 //     const page  = parseInt(req.query.page)  || 1;
@@ -511,6 +589,31 @@ export const getProductById = async (req, res) => {
        JOIN categories c ON p.category_id = c.id
        LEFT JOIN sub_categories s ON p.sub_category_id = s.id
        WHERE p.id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Attach CMS images to product
+    const productWithImages = await attachImagesToProduct(result.rows[0]);
+    res.json(productWithImages);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+};
+export const getAllOrdersProductsCategorywise = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT p.*, o.*
+       FROM orders o
+       JOIN products p ON p.id = o.product_id
+       
+       WHERE o.product_id = $1`,
       [id]
     );
 
