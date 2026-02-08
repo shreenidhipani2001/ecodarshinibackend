@@ -18,7 +18,7 @@ export const addToWishlist = async (req, res) => {
     );
 
     if (productCheck.rows.length === 0) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(200).json({ message: "Product not found" });
     }
 
     const result = await pool.query(
@@ -78,7 +78,7 @@ console.log("Fetching wishlist item for user ID 77:", userId);
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Wishlist item not found" });
+      return res.status(200).json({ message: "Wishlist item not found" });
     }
 console.log("Wishlist item fetched:", result.rows);
     res.json(result.rows);
@@ -103,7 +103,7 @@ export const updateWishlistItem = async (req, res) => {
     );
 
     if (existing.rows.length === 0) {
-      return res.status(404).json({ message: "Wishlist item not found" });
+      return res.status(200).json({ message: "Wishlist item not found" });
     }
 
     // Check if product exists if being updated
@@ -114,7 +114,7 @@ export const updateWishlistItem = async (req, res) => {
       );
 
       if (productCheck.rows.length === 0) {
-        return res.status(404).json({ message: "Product not found" });
+        return res.status(200).json({ message: "Product not found" });
       }
     }
 
