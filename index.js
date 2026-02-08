@@ -26,28 +26,28 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3004;
 
-// IMPORTANT: CORS must come BEFORE routes
-// app.use(
-//   cors({
-//      origin: "*",
-//      origin: "https://eco-darsini-frontend.vercel.app",
-//      origin: "http://localhost:3000",
+const allowedOrigins = [
+  "https://www.ecodarsini.com",
+  "https://ecodarsini.com",
+  "https://eco-darsini-frontend.vercel.app",
+  "http://localhost:3000"
+];
 
-//     credentials: true,
-//   })
-// );
 app.use(
   cors({
-     origin: "*",
-     origin: "https://eco-darsini-frontend.vercel.app",
-     origin: "http://localhost:3000",
-     
-
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
-
-app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
  
