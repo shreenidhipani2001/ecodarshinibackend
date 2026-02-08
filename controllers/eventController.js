@@ -70,6 +70,51 @@ export const createEvent = async (req, res) => {
     }
   };
 
+
+  
+  export const getEventsByDisplayType = async (req, res) => {
+    try {
+      const { display_type } = req.query;
+  
+      let query = `
+        SELECT * FROM events
+        WHERE status = 'active'
+      `;
+      const values = [];
+  
+      
+      if (display_type) {
+        values.push(display_type);
+        query += ` AND display_type = $${values.length}`;
+      }
+  
+      query += ` ORDER BY created_at DESC`;
+  
+      const result = await pool.query(query, values);
+  
+      let events = result.rows.map(e => {
+        const gallery = Array.isArray(e.cms_image_ids) ? e.cms_image_ids : [];
+        const allIds = e.cms_image_id
+          ? [e.cms_image_id, ...gallery]
+          : gallery;
+  
+        return { ...e, cms_image_ids: allIds };
+      });
+  
+      const eventsWithImages = await attachImagesToProducts(events);
+  
+      res.json({
+        success: true,
+        count: eventsWithImages.length,
+        data: eventsWithImages,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: err.message });
+    }
+  };
+  
+
   export const getEventById = async (req, res) => {
     try {
       const { id } = req.params;
