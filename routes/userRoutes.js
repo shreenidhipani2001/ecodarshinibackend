@@ -8,6 +8,9 @@ import {
   updateUser,
   deleteUser,
   getCurrentUser,
+  checkEmail,
+  getUserCredentials,
+  sendPassword
 } from "../controllers/userController.js";
  
 const router = express.Router();
@@ -16,7 +19,9 @@ const router = express.Router();
 router.post("/register", createUser);
 router.post("/login", loginUser);
 router.post("/logout", logoutUser);
-
+router.post("/check-email", checkEmail);
+router.post("/get-credentials", getUserCredentials);
+router.post("/send-password", sendPassword);
 // PROTECTED
 router.get("/", getAllUsers);
 router.post("/me",getCurrentUser)
