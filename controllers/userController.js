@@ -315,14 +315,18 @@ export const getUserCredentials = async (req, res) => {
     
     if (result.rows.length > 0) {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
+      console.log('otp'+otp);
       const transporter = nodemailer.createTransport({
-        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        family: 4,
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS,
         },
       });
+      console.log("Sending OTP email to:", transporter);
 
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
@@ -355,7 +359,10 @@ export const sendPassword = async (req, res) => {
     }
 
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      family: 4,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
