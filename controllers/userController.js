@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { pool } from "../db/pgClient.js";
 
 import bcrypt from "bcrypt";
+import nodemailer from "nodemailer";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.js";
 import e from 'express';
 const prisma = new PrismaClient();
@@ -281,6 +282,96 @@ export const deleteUser = async (req, res) => {
     );    
     res.json({ message: "User deleted" });
   } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// CHECK EMAIL EXISTS
+export const checkEmail = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const result = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    );
+    if (result.rows.length > 0) {
+      return res.status(200).json({ message: "Email found" });
+    }
+    return res.status(404).json({ message: "Email does not exist" });
+  } catch (err) {
+    console.log("checkEmail error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET USER CREDENTIALS BY EMAIL
+export const getUserCredentials = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const result = await pool.query(
+      'SELECT email, password_hash FROM users WHERE email = $1',
+      [email]
+    );
+    
+    if (result.rows.length > 0) {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Your OTP Code - EcoDarshini",
+        text: `Your OTP code is: ${otp}`,
+      });
+
+      return res.status(200).json({ message: "OTP sent to email", otp });
+    }
+    return res.status(404).json({ message: "User not found" });
+  } catch (err) {
+    console.log("getUserCredentials error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+
+export const sendPassword = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const result = await pool.query(
+      'SELECT email, password_hash FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your Password - EcoDarshini",
+      text: `Your password is: ${result.rows[0].password_hash}`,
+    });
+
+    return res.status(200).json({ message: "Password sent to email" });
+  } catch (err) {
+    console.log("sendPassword error:", err);
     res.status(500).json({ message: err.message });
   }
 };
